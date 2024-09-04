@@ -389,12 +389,10 @@ a.disabled {
    border-radius: 6px;
    padding: 10px ;
    font-size: 18px;
- 
-   /* Разместите всплывающую подсказку */
    position: absolute;
    z-index: 1;
    bottom: 100%;
-   left: 60%;
+   left: 40%;
    margin-left: -60px;
  }
  

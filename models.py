@@ -16,3 +16,9 @@ class FireDepartment(Base):
 
 class DistrictDepartment(Base):
     __table__ = Base.metadata.tables['todo_districtdepartment'] 
+
+class COU(Base):
+    __table__ = Base.metadata.tables['todo_cou']  
+
+class NotCombatVinicles(Base):
+    __table__ = Base.metadata.tables['todo_notcombatvinicles']    

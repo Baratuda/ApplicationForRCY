@@ -71,7 +71,13 @@ def sort_firefighters(list):
 
 
 def noCombatTruksmarker(truks,notСombatVehicles):
+    status = 'combat'
+    licensePlate = ''
     for i in truks:
-        if i.licensePlate in notСombatVehicles:
-            return colors[notСombatVehicles[i.licensePlate][0]]
-    return colors['#049b24']
+        if i.licensePlate in notСombatVehicles: 
+            status = notСombatVehicles[i.licensePlate][1]
+            licensePlate = i.licensePlate
+    if status == 'combat':    
+        return ('combat',colors['#049b24'])
+    else:
+        return (status, colors[notСombatVehicles[licensePlate][0]])

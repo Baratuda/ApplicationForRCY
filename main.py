@@ -27,7 +27,7 @@ def all():
         if str(query) in rictangles:
             all_fire_department = rictangles[query]
             all_firetruks = db_session.query(FireTruks).filter(and_(FireTruks.fireDepartment_id.in_(all_fire_department),FireTruks.status == 'COM')).all()
-            return render_template('rictangle.html', results=test(all_firetruks, all_fire_department), rictangle = query, notСombatVehicles=getNotСombatVehicles() , main_fireDepartment=main_fireDepartment)
+            return render_template('rictangle.html', results=test(all_firetruks, all_fire_department), rictangle = query, notСombatVehicles=getNotСombatVehicles(db_session) , main_fireDepartment=main_fireDepartment)
         if query.lower() == 'ответсвенные' or query.lower() == 'отв':
             all_responsibles = db_session.query(FireFighters, DistrictDepartment)\
                           .filter(FireFighters.post.startswith("ответ"))\
@@ -97,7 +97,7 @@ def all():
         if ric:
             all_fire_department = rictangles[ric]
             all_firetruks = db_session.query(FireTruks).filter(and_(FireTruks.fireDepartment_id.in_(all_fire_department),FireTruks.status == 'COM')).all()
-            return render_template('rictangle.html', results=test(all_firetruks, all_fire_department), rictangle=ric, firefighters=firefighters, notСombatVehicles=getNotСombatVehicles(), main_fireDepartment=main_fireDepartment)    
+            return render_template('rictangle.html', results=test(all_firetruks, all_fire_department), rictangle=ric, firefighters=firefighters, notСombatVehicles=getNotСombatVehicles(db_session), main_fireDepartment=main_fireDepartment)    
         elif type:
             fireTruks = db_session.query(FireTruks).filter(FireTruks.fireDepartment_id=='0').all()
             return render_template('headquarters.html', results=fireTruks, firefighters=firefighters)

@@ -1,3 +1,8 @@
+from models import COU,NotCombatVinicles
+import time
+
+
+
 romanNumbers = {0:'I',1:'II', 2:'III', 3:'IV', 4:'V', 5:'VI', 6:'VII', 7:'VII', 8:'VIII', 9:'IX', 10:'X'}
 rictangles = {
     '45':[1,30,5,3,29,36,21,14,15],
@@ -5,21 +10,55 @@ rictangles = {
     '34':[21,14,30,5],
 }   
 
+colors = {'дежурство' : '#76d43e',
+'другие загорания' : '#fdf401',
+'занятия': '#ff7601',
+'ликвидация жалоносных' : '#bf51c4',
+'ложный' : '#07f583',
+'платные услуги' : '#8bfe47',
+'пожар' : '#fe2400',
+'помощь населению' : '#01ffe7'}
 
-# Нужно переписать с учетом данных из журнала ЦОУ
-def getNotСombatVehicles():
-    return { 
-                '7643 АС-7':['#76d43e','Дежурство'],	
-                '9945 АС-7':['#fdf401','Другие загорания'],	
-                '3463 АК-7':['#ff7601','Занятия'],	
-                '4567АВ-7': ['#ffffff','Заправка'], 	
-                '3890 АН-7':['#bf51c4','Ликвидация жалоносных'],		
-                '8904 ВК-7':['#07f583','Ложный'],	
-                '2456 АН-7':['#8bfe47','Платные услуги'], 
-                '6733 РН-7':['#fe2400','Пожар'],	
-                '4564АВ-7':['#fdf401' , 'Другие загорания'],	
-                '6575 ПН-7':['#01ffe7','Помощь населению'],
-                '1249 АС-7':['#fe2400','Пожар'],}
+def time_calculator(t, x,y):
+    is_mistake  = False
+    level_of_mistake = 0
+    curent_time = time.localtime()
+    count_of_minutes = (curent_time.tm_hour - t.hour)*60 + (curent_time.tm_min - t.minute)
+    if count_of_minutes > x: 
+            is_mistake = True
+            level_of_mistake = 2
+    elif  count_of_minutes > y:
+            is_mistake = True
+            level_of_mistake = 1
+    minutes = count_of_minutes%60 
+    hour = int(count_of_minutes/60)
+           
+    return  (is_mistake, level_of_mistake, (hour,minutes))       
+
+def getNotСombatVehicles(session):
+    notСombatVehicles = session.query(COU, NotCombatVinicles)\
+                          .filter(COU.return_time.is_(None))\
+                          .join(COU, NotCombatVinicles.cou_id==COU.id)\
+                          .all()
+    listNotСombatVehicles = {}
+    for i,j in notСombatVehicles:
+        purpose_of_departure = i.purpose_of_departure.lower()
+        time_of_liquidation = i.time_of_liquidation
+        arivall_time = i.arivall_time
+        departure_time = i.departure_time
+        if time_of_liquidation != None:
+            is_mistake, level_of_mistake, count_of_minutes = time_calculator(time_of_liquidation,120,60)    
+        elif departure_time !=None:
+            is_mistake, level_of_mistake, count_of_minutes = time_calculator(departure_time,180,120)
+        elif arivall_time != None:
+            is_mistake, level_of_mistake, count_of_minutes = time_calculator(arivall_time,180,120)
+        if colors.get(purpose_of_departure):
+            listNotСombatVehicles[j.car_id] = [colors[purpose_of_departure], purpose_of_departure, is_mistake, level_of_mistake, count_of_minutes]
+        else:
+            listNotСombatVehicles[j.car_id] = ['#ffffff', purpose_of_departure, is_mistake, level_of_mistake, count_of_minutes]  
+    return listNotСombatVehicles
+
+  
 
 def test(list1, list2=None):
     truks = {}

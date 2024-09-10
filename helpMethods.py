@@ -1,23 +1,28 @@
 from models import COU,NotCombatVinicles
 import time
-
-
+import pandas as pd
 
 romanNumbers = {0:'I',1:'II', 2:'III', 3:'IV', 4:'V', 5:'VI', 6:'VII', 7:'VII', 8:'VIII', 9:'IX', 10:'X'}
-rictangles = {
-    '45':[1,30,5,3,29,36,21,14,15],
-    '67':[5,15,36,29],
-    '34':[21,14,30,5],
-}   
+
 
 colors = {'дежурство' : '#76d43e',
-'другие загорания' : '#fdf401',
-'занятия': '#ff7601',
-'ликвидация жалоносных' : '#bf51c4',
-'ложный' : '#07f583',
-'платные услуги' : '#8bfe47',
-'пожар' : '#fe2400',
-'помощь населению' : '#01ffe7'}
+          'другие загорания' : '#fdf401',
+          'занятия': '#ff7601',
+          'ликвидация жалоносных' : '#bf51c4',
+          'ложный' : '#07f583',
+          'платные услуги' : '#8bfe47',
+          'пожар' : '#fe2400',
+          'помощь населению' : '#01ffe7'
+        }
+
+def read_docx_table(document):
+    table = document.tables[0]
+    data = [[cell.text for cell in row.cells] for row in table.rows]
+    df = pd.DataFrame(data)
+    outside_col, inside_col = df.iloc[0], df.iloc[1]
+    hier_index = pd.MultiIndex.from_tuples(list(zip(outside_col, inside_col)))
+    df = pd.DataFrame(data,columns=hier_index).drop(df.index[[0,1]] ).reset_index(drop=True)
+    return df
 
 def time_calculator(t, x,y):
     is_mistake  = False
@@ -63,9 +68,9 @@ def getNotСombatVehicles(session):
 def test(list1, list2=None):
     truks = {}
     if list2:
-        result = { i:{} for i in list2}   
+        result = { str(i):{} for i in list2}   
     else:    
-        result = { i.fireDepartment_id:{} for i in list1}
+        result = { str(i.fireDepartment_id):{} for i in list1}    
     for i in list1:
         if i.main_truk_id:
             if truks.get(i.main_truk_id):
@@ -79,25 +84,32 @@ def test(list1, list2=None):
             continue   
         else:
             truks[i.licensePlate].append(i)
-            continue  
+            continue   
     for i in list1:
+        fireDepartment = str(i.fireDepartment_id)
         x = 0
-        if result[i.fireDepartment_id].get('Ремонт') and result[i.fireDepartment_id].get('Резерв'): x=2
-        elif result[i.fireDepartment_id].get('Ремонт'): x=1
-        elif result[i.fireDepartment_id].get('Резерв'): x=1
-        number = len(result[i.fireDepartment_id])-x 
+        if result[fireDepartment].get('Ремонт') and result[fireDepartment].get('Резерв'): x=2
+        elif result[fireDepartment].get('Ремонт'): x=1
+        elif result[fireDepartment].get('Резерв'): x=1
+        number = len(result[fireDepartment])-x 
         if truks.get(i.licensePlate):
             if truks[i.licensePlate][0].status == 'COM':
-                result[i.fireDepartment_id][romanNumbers[number]] = truks[i.licensePlate]
+                result[fireDepartment][romanNumbers[number]] = truks[i.licensePlate]
                 continue
             elif truks[i.licensePlate][0].status == 'REP':
-                result[i.fireDepartment_id]['Ремонт'] = truks[i.licensePlate] 
+                result[fireDepartment]['Ремонт'] = truks[i.licensePlate] 
                 continue
             else:
-                result[i.fireDepartment_id]['Резерв'] = truks[i.licensePlate]
+                result[fireDepartment]['Резерв'] = truks[i.licensePlate]
                 continue 
 
-    return result
+    new_result = {}            
+    for i,j in result.items():            
+        if j == {}:
+             continue 
+        else:
+            new_result[i] = j      
+    return new_result
            
 
 
@@ -106,14 +118,17 @@ def get_firetruks(list, list2=None):
     if list2: 
         truks = test(list2)
         for fireTruk, district in list:
+            department_id = str(fireTruk.fireDepartment_id)
             if result.get(district.districtDepartmentName):
-                result[district.districtDepartmentName][fireTruk.fireDepartment_id] = truks[fireTruk.fireDepartment_id]
+                result[district.districtDepartmentName][department_id] = truks[department_id]
             else:
-                result[district.districtDepartmentName]={fireTruk.fireDepartment_id : truks[fireTruk.fireDepartment_id]}    
+                result[district.districtDepartmentName]={department_id : truks[department_id]}    
     else:  
         for fireTruk, district in list:
+            department_id = str(fireTruk.fireDepartment_id)
             if result.get(district.districtDepartmentName):
-                result[district.districtDepartmentName][fireTruk.fireDepartment_id] = [fireTruk,]
+                result[district.districtDepartmentName][department_id] = [fireTruk,]
             else:
-                result[district.districtDepartmentName]={fireTruk.fireDepartment_id : [fireTruk,]}                
+                result[district.districtDepartmentName]={department_id : [fireTruk,]}  
+                          
     return result 

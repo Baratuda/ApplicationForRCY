@@ -1,13 +1,18 @@
+import os
+from collections import OrderedDict
 from flask import Flask, request, render_template
 from sqlalchemy.orm import scoped_session, sessionmaker
 from config import engine
 from filters.my_custom_filters import dificult_length_calculator, noCombatTruksmarker, sort_firedepartments, sort_firefighters, sort_number_of_firetrukset
-from helpMethods import get_firetruks, getNotСombatVehicles, rictangles, test
+from helpMethods import get_firetruks, getNotСombatVehicles, read_docx_table,  test
 from models import DistrictDepartment, FireTruks, FireDepartment, FireFighters
 from sqlalchemy import or_, and_
+from docx import Document
+import pandas as pd
+import re
+
 
 db_session = scoped_session(sessionmaker(bind=engine))
-
 app = Flask(__name__) 
 app.add_template_filter(dificult_length_calculator)
 app.add_template_filter(sort_firedepartments)
@@ -15,6 +20,29 @@ app.add_template_filter(sort_firedepartments)
 app.add_template_filter(sort_number_of_firetrukset)
 app.add_template_filter(noCombatTruksmarker)
 app.add_template_filter(sort_firefighters)
+
+
+def get_rictangles(i):
+    df = pd.read_csv("rictangles.csv")
+    df = df.loc[df['№ сектора'] == int(i)]
+    my_list = [i for i in re.split(r'-\d',df.loc[df.index[0],'0']) if i!='']
+    return list(OrderedDict.fromkeys( my_list))
+
+@app.route("/downloader", methods=['GET','POST'])
+def downloader():
+    if request.method == 'GET':
+        return render_template('downloader.html')
+    else:
+        file = request.files['file']
+        document = Document(os.path.realpath(file.filename))
+        df = read_docx_table(document)
+        num_of_sector = df['№ сектора']
+        num = df[['Выезжают ПАСЧ по номерам вызова','Резерв']].agg("".join, axis=1)
+        det = pd.concat([num_of_sector, num], join = 'outer', axis = 1)
+        for i, v in det.iterrows():
+            det.loc[i] = [v['№ сектора'].replace('№','').replace('.',''), v[0].replace("\n","").replace(" ","")]
+        det.to_csv('rictangles.csv', index=False)
+        return render_template('downloader.html')
 
 @app.route("/", methods=['GET','POST'])
 def all():
@@ -24,8 +52,8 @@ def all():
     main_fireDepartment = [i[0] for i in db_session.query(FireDepartment.fireDepartmentNumber).filter(FireDepartment.isMain == True).all()]
     if request.method == 'POST':   
         query = request.form['query']
-        if str(query) in rictangles:
-            all_fire_department = rictangles[query]
+        all_fire_department = get_rictangles(query)
+        if  all_fire_department:
             all_firetruks = db_session.query(FireTruks).filter(and_(FireTruks.fireDepartment_id.in_(all_fire_department),FireTruks.status == 'COM')).all()
             return render_template('rictangle.html', results=test(all_firetruks, all_fire_department), rictangle = query, notСombatVehicles=getNotСombatVehicles(db_session) , main_fireDepartment=main_fireDepartment)
         if query.lower() == 'ответсвенные' or query.lower() == 'отв':
@@ -120,6 +148,10 @@ def all():
         return render_template('all.html', results = get_firetruks(all, all_fireTruks), main_fireDepartment=main_fireDepartment)     
     else:
         return render_template('main.html')
+
+
+
+
 
 
 if __name__ == '__main__':

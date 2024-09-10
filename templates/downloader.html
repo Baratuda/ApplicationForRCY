@@ -1,0 +1,25 @@
+{% extends "main.html" %}
+
+{% block content %}
+<div  style="margin-left: 40%; margin-top: 10%; margin-right: 40%; background-color: white; width: auto;  height: auto; border: 3px solid rgb(61, 61, 61);">
+    <form method="post" action="/downloader" enctype="multipart/form-data" id = "form">
+        <div class="input-file-row">
+            <label class="input-file">
+                <div class="dropdown">
+                    
+                    <img src="/static/images/free-icon-question-circular-button-107073.png" height="30" width="30" class="dropbtn">
+                    <div class="dropdown-content">
+                        <h3>Загрузите (.docx) файл с расписанием выезда для его корректировки или для загрузки в приложение. 
+                            Поле загрузки поддерживает только файлы с расширением (.docx)!!! 
+                        </h3>
+                    </div>
+                </div>
+                <h3 style="text-align: center;">Загрузите расписание выезда.</h3>
+                <input type="file" name="file" id = "file">		
+                <span style="width:31.5vh; margin-left: 11%; margin-bottom: 3%;"><img src="/static/images/download.png" height="20" width="20"></span>        
+             </label>
+             
+        </div>
+    </form>
+</div>
+{% endblock content %}

@@ -23,10 +23,12 @@ app.add_template_filter(sort_firefighters)
 
 
 def get_rictangles(i):
-    df = pd.read_csv("rictangles.csv")
-    df = df.loc[df['№ сектора'] == int(i)]
-    my_list = [i for i in re.split(r'-\d',df.loc[df.index[0],'0']) if i!='']
-    return list(OrderedDict.fromkeys( my_list))
+    if not i.isalpha():
+        df = pd.read_csv("rictangles.csv")
+        df = df.loc[df['№ сектора'] == int(i)]
+        my_list = [i for i in re.split(r'-\d',df.loc[df.index[0],'0']) if i!='']
+        return list(OrderedDict.fromkeys( my_list))
+    else: return
 
 @app.route("/downloader", methods=['GET','POST'])
 def downloader():
@@ -148,10 +150,6 @@ def all():
         return render_template('all.html', results = get_firetruks(all, all_fireTruks), main_fireDepartment=main_fireDepartment)     
     else:
         return render_template('main.html')
-
-
-
-
 
 
 if __name__ == '__main__':

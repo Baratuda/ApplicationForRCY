@@ -1,10 +1,10 @@
 from models import COU,NotCombatVinicles
 import time
 import pandas as pd
+from collections import OrderedDict
+import re
 
 romanNumbers = {0:'I',1:'II', 2:'III', 3:'IV', 4:'V', 5:'VI', 6:'VII', 7:'VII', 8:'VIII', 9:'IX', 10:'X'}
-
-
 colors = {'дежурство' : '#76d43e',
           'другие загорания' : '#fdf401',
           'занятия': '#ff7601',
@@ -15,14 +15,14 @@ colors = {'дежурство' : '#76d43e',
           'помощь населению' : '#01ffe7'
         }
 
-def read_docx_table(document):
-    table = document.tables[0]
-    data = [[cell.text for cell in row.cells] for row in table.rows]
-    df = pd.DataFrame(data)
-    outside_col, inside_col = df.iloc[0], df.iloc[1]
-    hier_index = pd.MultiIndex.from_tuples(list(zip(outside_col, inside_col)))
-    df = pd.DataFrame(data,columns=hier_index).drop(df.index[[0,1]] ).reset_index(drop=True)
-    return df
+def get_rictangles(i):
+    if not i.isalpha():
+        df = pd.read_csv("rictangles.csv")
+        df = df.loc[df['№ сектора'] == int(i)]
+        my_list = [i for i in re.split(r'-\d',df.loc[df.index[0],'0']) if i!='']
+        return list(OrderedDict.fromkeys( my_list))
+    else: return
+
 
 def time_calculator(t, x,y):
     is_mistake  = False
@@ -110,25 +110,3 @@ def test(list1, list2=None):
         else:
             new_result[i] = j      
     return new_result
-           
-
-
-def get_firetruks(list, list2=None):
-    result = {}
-    if list2: 
-        truks = test(list2)
-        for fireTruk, district in list:
-            department_id = str(fireTruk.fireDepartment_id)
-            if result.get(district.districtDepartmentName):
-                result[district.districtDepartmentName][department_id] = truks[department_id]
-            else:
-                result[district.districtDepartmentName]={department_id : truks[department_id]}    
-    else:  
-        for fireTruk, district in list:
-            department_id = str(fireTruk.fireDepartment_id)
-            if result.get(district.districtDepartmentName):
-                result[district.districtDepartmentName][department_id] = [fireTruk,]
-            else:
-                result[district.districtDepartmentName]={department_id : [fireTruk,]}  
-                          
-    return result 

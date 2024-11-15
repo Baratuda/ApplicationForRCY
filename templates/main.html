@@ -7,14 +7,32 @@
     
   </head>
   <body style="background-image: url(/static/images/photo.jpg);background-position: center center;background-size: cover;background-repeat: no-repeat;background-attachment: fixed;">
-    <div style="background-color: aliceblue; width: 100%; height: 10%; position: absolute; top: 0%; left: 0%;">
-      <form action="/" method="POST" class="search-wrapper active">
+    <div style="background-color: aliceblue; width: 100%; height: 10%; position: absolute; top: 0%; left: 0%;clear:both;">
+      <form action="{{ url_for('all', num=20)}}" method="POST" class="search-wrapper active">
         <div class="input-holder">
-            <input class="search-input" type="text" name="query"  placeholder="Type to search" />
+            <input class="search-input" type="text" name="query"  placeholder="{{query}}" />
             <button class="search-icon"><span></span></button>
         </div>
       </form>
     </div>
+    <div style="position: absolute;left:0%;top:10%; background-color: rgb(206, 214, 223);width: 100%; padding-left: 42.5%;">
+      <a class="button_for_ordering" href="{{ url_for('all', num=4, query = query)}}">
+        №1
+      </a>
+      <a class="button_for_ordering" href="{{ url_for('all', num=6, query = query)}}">
+        №2
+      </a>
+      <a class="button_for_ordering" href="{{ url_for('all', num=8, query = query)}}">
+        №3
+      </a>
+      <a class="button_for_ordering" href="{{ url_for('all', num=10, query = query)}}">
+        №4
+      </a>
+      <a class="button_for_ordering" href="{{ url_for('all', num=20, query = query)}}">
+        №5
+      </a>
+    </div>
+    
     {% block content %}
     {% endblock content %}
     <script src="https://yandex.st/jquery/2.1.1/jquery.min.js"></script>

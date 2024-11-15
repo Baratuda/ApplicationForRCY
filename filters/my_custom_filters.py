@@ -10,74 +10,36 @@ colors = {'#76d43e': ['#76d43e','#6cc439', '#63b434', '#579e2e','#50912a'],
           '#01ffe7':['#01ffe7', '#03e6cf', '#05cab7', '#04b9a7', '#06a091'],
           '#049b24': ['#049b24','#028d20','#04791d','#046e1b','#045c17']}
 
-def dificult_length_calculator(dict):
-    result = 0
-    result_dict = {}
-    if  isinstance(dict, type({}.values())):
-       for j in dict:
-           result= result+len(j.values())
-    else:
-        result = 0 
-        for j in dict.values():
-            if isinstance(j, type({})):
-                result_dict = j
-                while True:
-                    if type(next(iter(result_dict))) is list:
-                        for i in result_dict:
-                            result+=len(i)
-                        break
-                    result_dict = j.values() 
-            if type(j) is list:
-                result+=len(j)  
-            
-                 
-    return result 
+car_names = {'АБР1':'АБР','АБР2':'АБР(Кобра)','АЦ1':'Цистерна','АЦ2':'Бочка','АЦ3':'Волна','АЛ-3':'Лестница','АЛ-5':'Высотка',
+             'АКП-3':'Колено','АКП-5':'Подъемник','АВ':'Пена','АП':'Порошок','МПУ':'МПУ','АСА':'АСА','ВС':'Воздух', 'АГДЗС':'Газовка','АКТПЛ-24':'Колено'}
+
+def carNamer(car_name):
+    result = car_names.get(car_name)
+    result2 = car_names.get(car_name[:-1])
+    if result:
+        return result
+    elif result2:
+        return result2
 
 
-def sort_firedepartments(list_firedepartments, main_firedepartments):
-    main_firedepartment = {}
-    for i,j in list_firedepartments.items():
-        if i in main_firedepartments: 
-            main_firedepartment = {i:j}
-            del list_firedepartments[i]
-            break
-    return dict(list(main_firedepartment.items()) + list(list_firedepartments.items()))    
-
-romanNumber = {0:'I',1:'II', 2:'III', 3:'IV', 4:'V', 5:'VI', 6:'VII', 7:'VII', 8:'VIII', 9:'IX', 10:'X'}
-def sort_number_of_firetrukset(list_firedepartments):
-    if list_firedepartments.get('Резерв'):    
-        res = list_firedepartments.get('Резерв')
-        del list_firedepartments['Резерв']
-        list_firedepartments['Резерв'] = res
-    if list_firedepartments.get('Ремонт'):
-        rep = list_firedepartments.get('Ремонт')
-        del list_firedepartments['Ремонт']
-        list_firedepartments['Ремонт'] = rep
-    return list_firedepartments
-
-def sort_firefighters(list):
-    sorted_list = []
-    main = ''
-    for i in list:
-        if i.post == 'Командир':
-            sorted_list.insert(0,i)
-        elif i.post == 'Нач. дежурной смены': main=i   
-        else: sorted_list.append(i)
-    if main: sorted_list.insert(0,main)  
-    return  sorted_list      
-            
     
 
-
-
-def noCombatTruksmarker(truks,notСombatVehicles):
+def noCombatTruksmarker(truks,notСombatVehicles,key):
     status = 'combat'
     licensePlate = ''
+    
     for i in truks:
         if i.licensePlate in notСombatVehicles: 
             status = notСombatVehicles[i.licensePlate][1]
             licensePlate = i.licensePlate
+        if status.lower() == 'передислокация' and str(i.fireDepartment_id) !=  key:
+            status = 'передислокация2' 
+        
+              
     if status == 'combat':    
-        return ('combat',colors['#049b24'])
+        return ('combat',colors['#049b24'],licensePlate,1)
+    elif status == 'передислокация2':
+        return ('передислокация', colors['#049b24'],licensePlate,1)
     else:
-        return (status, colors[notСombatVehicles[licensePlate][0]])
+        return (status.lower(), colors[notСombatVehicles[licensePlate][0]],licensePlate,0)
+

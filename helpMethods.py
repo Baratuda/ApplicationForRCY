@@ -1,10 +1,10 @@
 from models import COU,NotCombatVinicles
 import time
 import pandas as pd
-from collections import OrderedDict
 import re
 
-romanNumbers = {0:'I',1:'II', 2:'III', 3:'IV', 4:'V', 5:'VI', 6:'VII', 7:'VII', 8:'VIII', 9:'IX', 10:'X'}
+mainList = ['АЦ','АБР', 'АГДЗС', 'АСА']
+romanNumbers = {0:'1',1:'2', 2:'3', 3:'4', 4:'5', 5:'6', 6:'7', 7:'8', 8:'9', 9:'10', 10:'11'}
 colors = {'дежурство' : '#76d43e',
           'другие загорания' : '#fdf401',
           'занятия': '#ff7601',
@@ -15,12 +15,15 @@ colors = {'дежурство' : '#76d43e',
           'помощь населению' : '#01ffe7'
         }
 
+    
+            
+
 def get_rictangles(i):
     if not i.isalpha():
         df = pd.read_csv("rictangles.csv")
         df = df.loc[df['№ сектора'] == int(i)]
         my_list = [i for i in re.split(r'-\d',df.loc[df.index[0],'0']) if i!='']
-        return list(OrderedDict.fromkeys( my_list))
+        return  my_list
     else: return
 
 
@@ -37,7 +40,6 @@ def time_calculator(t, x,y):
             level_of_mistake = 1
     minutes = count_of_minutes%60 
     hour = int(count_of_minutes/60)
-           
     return  (is_mistake, level_of_mistake, (hour,minutes))       
 
 def getNotСombatVehicles(session):
@@ -51,6 +53,9 @@ def getNotСombatVehicles(session):
         time_of_liquidation = i.time_of_liquidation
         arivall_time = i.arivall_time
         departure_time = i.departure_time
+        department = ''
+        if i.department_id:
+            department = i.department_id
         if time_of_liquidation != None:
             is_mistake, level_of_mistake, count_of_minutes = time_calculator(time_of_liquidation,120,60)    
         elif departure_time !=None:
@@ -58,55 +63,88 @@ def getNotСombatVehicles(session):
         elif arivall_time != None:
             is_mistake, level_of_mistake, count_of_minutes = time_calculator(arivall_time,180,120)
         if colors.get(purpose_of_departure):
-            listNotСombatVehicles[j.car_id] = [colors[purpose_of_departure], purpose_of_departure, is_mistake, level_of_mistake, count_of_minutes]
+            listNotСombatVehicles[j.car_id] = [colors[purpose_of_departure], purpose_of_departure, is_mistake, level_of_mistake, count_of_minutes,department]
         else:
-            listNotСombatVehicles[j.car_id] = ['#ffffff', purpose_of_departure, is_mistake, level_of_mistake, count_of_minutes]  
+            listNotСombatVehicles[j.car_id] = ['#ffffff', purpose_of_departure, is_mistake, level_of_mistake, count_of_minutes,department]  
     return listNotСombatVehicles
 
-  
+def helper(licensePlate, truks,result, is_index=False):
+    if truks.get(licensePlate):
+        if is_index:
+            truks[licensePlate].append(result) 
+        else:
+            truks[licensePlate].insert(0,result)   
+    else:
+        truks[licensePlate] = [result]
+    return truks    
 
-def test(list1, list2=None):
+def redeployedCarFinder(not_combat):
+    redeployedCarList = {}
+    for i,j in not_combat.items():
+        if j[1].lower() == 'передислокация':
+            redeployedCarList[i] = j[5]
+    return redeployedCarList        
+
+
+def dict_maker(list_firedepartments):
+    result= {}
+    for i in list_firedepartments:
+        if i in result:
+            i = i + ' '
+        result[i] = {} 
+    return result            
+
+
+
+def fireTrukGetter(all_firetruks, all_fire_department, not_combat):
     truks = {}
-    if list2:
-        result = { str(i):{} for i in list2}   
-    else:    
-        result = { str(i.fireDepartment_id):{} for i in list1}    
-    for i in list1:
-        if i.main_truk_id:
-            if truks.get(i.main_truk_id):
-                truks[i.main_truk_id].append(i)
-                continue
-            else:
-                truks[i.main_truk_id] = [i]
-                continue
-        if not truks.get(i.licensePlate):
-            truks[i.licensePlate] = [i]
-            continue   
+    main_truks = {}
+    listRedeployedCars = {}
+    is_index = False
+    list_truks = []
+    redeployedCars = redeployedCarFinder(not_combat)
+    result = dict_maker(all_fire_department) 
+    for i in all_firetruks:
+        if i.main_truk_id: 
+            licensePlate = i.main_truk_id
+            if i.name == 'АЦ' or i.name == 'АБР': 
+                list_truks.append(i.main_truk_id)
+        else: 
+            licensePlate = i.licensePlate
+            is_index=True
+    
+        if i.name in mainList:
+            if i.licensePlate in redeployedCars:
+                helper(licensePlate,listRedeployedCars,i, is_index)
+            helper(licensePlate,main_truks,i, is_index)
         else:
-            truks[i.licensePlate].append(i)
-            continue   
-    for i in list1:
-        fireDepartment = str(i.fireDepartment_id)
-        x = 0
-        if result[fireDepartment].get('Ремонт') and result[fireDepartment].get('Резерв'): x=2
-        elif result[fireDepartment].get('Ремонт'): x=1
-        elif result[fireDepartment].get('Резерв'): x=1
-        number = len(result[fireDepartment])-x 
-        if truks.get(i.licensePlate):
-            if truks[i.licensePlate][0].status == 'COM':
-                result[fireDepartment][romanNumbers[number]] = truks[i.licensePlate]
-                continue
-            elif truks[i.licensePlate][0].status == 'REP':
-                result[fireDepartment]['Ремонт'] = truks[i.licensePlate] 
-                continue
-            else:
-                result[fireDepartment]['Резерв'] = truks[i.licensePlate]
-                continue 
+            if i.licensePlate in redeployedCars:
+                helper(licensePlate,listRedeployedCars,i, is_index)
+            helper(licensePlate,truks,i,is_index)
 
-    new_result = {}            
-    for i,j in result.items():            
-        if j == {}:
-             continue 
+   
+    for i,j in main_truks.items():
+        fireDepartment = str(j[0].fireDepartment_id)
+        length = len(result[fireDepartment])
+        if result.get(fireDepartment+' ')=={} and len(result.get(fireDepartment))==1:
+            result[fireDepartment+' '][romanNumbers[length]] = j    
         else:
-            new_result[i] = j      
-    return new_result
+            result[fireDepartment][romanNumbers[length]] = j   
+
+
+        
+    for i,j in truks.items():
+        fireDepartment = str(j[0].fireDepartment_id)
+        if result.get(fireDepartment+' '): 
+            length = len(result[fireDepartment])+len(result[fireDepartment+' '])
+        else:
+            length = len(result[fireDepartment])
+        result[fireDepartment][romanNumbers[length]] = j
+
+    for i,j in listRedeployedCars.items():
+         result[str(redeployedCars[j[0].licensePlate])]['Пер.'] = j    
+
+
+        
+            
+    return { i:j for i,j in result.items() if j!={} }
